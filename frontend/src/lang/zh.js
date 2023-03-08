@@ -1364,6 +1364,7 @@ export default {
     chart_table_pivot: '透视表',
     table_pivot_row: '数据行',
     field_error_tips: '该字段所对应的数据集原始字段发生变更（包括维度、指标，字段类型，字段被删除等），建议重新编辑',
+    mark_field_error: '数据集变更，当前字段不存在，请重新选择',
     table_border_color: '边框颜色',
     table_header_align: '表头对齐方式',
     table_item_align: '表格对齐方式',
@@ -1501,15 +1502,24 @@ export default {
                   折线（区域）图、柱状（条形）图、仪表盘 : {a}（系列名称），{b}（类目值），{c}（数值）<br>
                   饼图、漏斗图: {a}（系列名称），{b}（数据项名称），{c}（数值）, {d}（百分比）<br>
                   地图 : {a}（系列名称），{b}（区域名称），{c}（合并数值）, {d}（无）<br>
-                  散点图（气泡）图 : {a}（系列名称），{b}（数据名称），{c}（数值数组）, {d}（无）`
+                  散点图（气泡）图 : {a}（系列名称），{b}（数据名称），{c}（数值数组）, {d}（无）`,
+    h_position: '水平位置',
+    v_position: '垂直位置',
+    p_left: '左对齐',
+    p_right: '右对齐',
+    p_top: '上对齐',
+    p_bottom: '下对齐',
+    p_center: '居中'
   },
   dataset: {
+    scope_edit: '仅编辑时生效',
+    scope_all: '数据集预览时全局生效',
     spend_time: '耗时',
     sql: 'SQL 语句',
     sql_result: '运行结果',
     parse_filed: '解析字段',
     field_rename: '字段重命名',
-    params_work: '仅在编辑sql时生效',
+    params_work: '仅编辑时生效：参数值仅在数据集编辑时生效；全局生效：在数据集查看、预览、以及用到数据集的视图中均生效。',
     select_year: '选择年',
     sql_variable_limit_1: '1、SQL 变量只能在 WHERE 条件中使用',
     sql_variable_limit_2: '2、示例：select * from table_name where column_name1=\'${param_name1}\' and column_name2 in \'${param_name2}\'',
@@ -1869,6 +1879,7 @@ export default {
     all_compute_mode: '直连、抽取模式',
     extra_params: '额外的JDBC连接字符串',
     please_input_dataPath: '请输入 JsonPath 数据路径',
+    show_api_data: '查看API数据结构',
     warning: '包含无效数据表',
     data_table: '数据表',
     data_table_name: '数据表名称',
@@ -1879,7 +1890,9 @@ export default {
     base_info: '基础信息',
     column_info: '数据结构',
     request: '请求',
+    isUseJsonPath: '是否指定JsonPath',
     path_all_info: '请填入完整地址',
+    jsonpath_info: '请填入JsonPath',
     req_param: '请求参数',
     headers: '请求头',
     key: '键',
@@ -1949,6 +1962,7 @@ export default {
     back_parent: '返回上一级'
   },
   panel: {
+    forbidden_copy: '当前组件不允许复制',
     url_check_error: '跳转错误，URL不合法',
     view_style: '视图样式',
     view_color_setting: '视图配色',
@@ -2237,6 +2251,8 @@ export default {
     aided_grid: '辅助设计网格',
     aided_grid_open: '打开',
     aided_grid_close: '关闭',
+    export_pdf_page: '分页线',
+    export_pdf_page_remark: '仅对API导出仪表板PDF分页有效',
     subject_no_edit: '系统主题不能修改',
     subject_name_not_null: '主题名称需要1~20字符',
     is_enable: '是否启用',
@@ -2296,7 +2312,13 @@ export default {
     fold: '收起',
     expand: '展开',
     pdf_export: 'PDF 导出',
-    switch_pdf_template: '切换 PDF 模板'
+    switch_pdf_template: '切换 PDF 模板',
+    pdf_template_with_params: '默认模板(加参数样式)',
+    pdf_template_only_pic: '默认模板(只截图)',
+    panel_name: '仪表板名称',
+    export_user: '导出用户',
+    export_time: '导出时间',
+    you_can_type_here: '可以在这里输入其他内容'
   },
   plugin: {
     local_install: '本地安装',
@@ -2419,7 +2441,9 @@ export default {
     standard: '标准版',
     enterprise: '企业版',
     support: '获取技术支持',
-    update_success: '更新成功'
+    update_success: '更新成功',
+    serial_no: '序列号',
+    remark: '备注'
   },
   template: {
     exit_same_template_check: '当前分类存在相同名称模板，是否覆盖？',
@@ -2780,6 +2804,8 @@ export default {
   'I18N_USER_TEMPLATE_ERROR': '模版错误',
   'i18n_max_user_import_size': '文件最大不能超过10M',
   app_template: {
+    move: '移动',
+    move_item: '移动应用',
     datasource_new: '新建',
     datasource_history: '复用',
     datasource_from: '数据来源',
@@ -2818,9 +2844,9 @@ export default {
   },
   watermark: {
     support_params: '当前支持的参数：',
-    enable: '启用',
+    enable: '启用水印',
     enable_panel_custom: '允许仪表板单独打开或者关闭水印',
-    content: '内容',
+    content: '水印内容',
     custom_content: '自定义公式',
     account: '账号',
     nick_name: '昵称',
@@ -2829,8 +2855,8 @@ export default {
     watermark_color: '水印颜色',
     watermark_font_size: '水印字号',
     watermark_space: '水印间距',
-    horizontal: '横向',
-    vertical: '纵向',
+    horizontal: '横向间距',
+    vertical: '纵向间距',
     reset: '重置',
     preview: '预览',
     save: '保存'

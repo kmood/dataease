@@ -1366,6 +1366,7 @@ export default {
     chart_table_pivot: 'Pivot Table',
     table_pivot_row: 'Data Row',
     field_error_tips: 'This field is changed(Include dimension、quota，field type，deleted),please edit again.',
+    mark_field_error: 'The current field does not exist, please select again',
     table_border_color: 'Border Color',
     table_header_align: 'Header Align',
     table_item_align: 'Body Align',
@@ -1508,15 +1509,24 @@ export default {
                     Line (area) chart, Column (Bar) chart, Dashboard: {a} is series name, {b} is category value, {c} is value<br>
                     Pie chart, Funnel chart: {a} is series name, {b} is data item name, {c} is value, {d} is percentage<br>
                     Map : {a} (series name), {b} is area name, {c} is merged values, {d} is none<br>
-                    Scatter (Bubble) plot: {a} is series name, {b} is data name, {c} is numeric array, {d} is none`
+                    Scatter (Bubble) plot: {a} is series name, {b} is data name, {c} is numeric array, {d} is none`,
+    h_position: 'Horizontal Position',
+    v_position: 'Vertical Position',
+    p_left: 'Left',
+    p_right: 'Right',
+    p_top: 'Top',
+    p_bottom: 'Bottom',
+    p_center: 'Center'
   },
   dataset: {
+    scope_edit: 'Effective only when editing',
+    scope_all: 'Effect globally when the dataset is previewed',
     spend_time: 'Spend',
     sql: 'SQL',
     sql_result: 'Result',
     parse_filed: 'Parse Field',
     field_rename: 'Rename Field',
-    params_work: 'Effective only when editing SQL',
+    params_work: 'Effective only when editing: parameter values are effective only when editing data sets; Global Effective: It takes effect in dataset view, preview, and view where dataset is used.',
     sql_variable_limit_1: '1、SQL variables can only be used in where conditions',
     sql_variable_limit_2: '2、Example：select * from table_name where column_name1=\'${param_name1}\' and column_name2 in \'${param_name2}\'',
     select_year: 'Select Year',
@@ -1876,6 +1886,7 @@ export default {
     all_compute_mode: 'Direct connection and extraction mode',
     extra_params: 'Extra JDBC connection string',
     please_input_dataPath: 'Please enter the JsonPath data path',
+    show_api_data: 'View API data structure',
     warning: 'Contains invalid table',
     data_table: 'Dataset Table',
     data_table_name: 'Dataset Table name',
@@ -1886,7 +1897,9 @@ export default {
     base_info: 'Basic information',
     column_info: 'Data structure',
     request: 'Request',
+    isUseJsonPath: 'Specify JsonPath or not',
     path_all_info: 'Please fill in the full address',
+    jsonpath_info: 'Please fill in JsonPath',
     req_param: 'Request parameters',
     headers: 'Request header',
     key: 'Key',
@@ -1955,6 +1968,7 @@ export default {
     back_parent: 'Back to previous'
   },
   panel: {
+    forbidden_copy: 'Forbidden copy',
     url_check_error: 'Jump error, Illegal URL',
     view_style: 'View Style',
     view_color_setting: 'View Color Setting',
@@ -2243,6 +2257,8 @@ export default {
     aided_grid: 'Aided Grid',
     aided_grid_open: 'Open',
     aided_grid_close: 'Close',
+    export_pdf_page: 'Pagination Line',
+    export_pdf_page_remark: 'Only valid for API export dashboard PDF pagination',
     subject_no_edit: 'System Subject Can Not Edit',
     subject_name_not_null: 'Subject Name Can Not Be Null And Less Than 20 charts',
     is_enable: 'Enable',
@@ -2302,7 +2318,13 @@ export default {
     fold: 'Fold',
     expand: 'Expand',
     pdf_export: 'PDF Export',
-    switch_pdf_template: 'Switch PDF Template'
+    switch_pdf_template: 'Switch PDF Template',
+    pdf_template_with_params: 'Default template(with params)',
+    pdf_template_only_pic: 'Default template(only screenshot)',
+    panel_name: 'Panel name',
+    export_user: 'Export User',
+    export_time: 'Export Time',
+    you_can_type_here: 'You can type here'
   },
   plugin: {
     local_install: 'Local installation',
@@ -2425,7 +2447,9 @@ export default {
     standard: 'Standard',
     enterprise: 'Enterprise',
     support: 'Get technical support',
-    update_success: 'Update Success'
+    update_success: 'Update Success',
+    serial_no: 'Serial Number',
+    remark: 'Remark'
   },
   template: {
     exit_same_template_check: 'The Same Name Exists In Now Class. Do You Want To Override It?',
@@ -2786,6 +2810,8 @@ export default {
   'I18N_USER_TEMPLATE_ERROR': 'Template file error',
   'i18n_max_user_import_size': 'File size exceeds 10M',
   app_template: {
+    move: 'Move',
+    move_item: 'Move App',
     datasource_new: 'New',
     datasource_history: 'Multiplexing',
     datasource_from: 'Datasource From',
@@ -2825,9 +2851,9 @@ export default {
   },
   watermark: {
     support_params: 'Currently supported parameters:',
-    enable: 'Enable',
+    enable: 'Watermark Enable',
     enable_panel_custom: 'Allow the dashboard to open or close the watermark independently',
-    content: 'content',
+    content: 'Watermark Content',
     custom_content: 'Custom Content',
     account: 'Account',
     nick_name: 'Nick Name',
@@ -2836,8 +2862,8 @@ export default {
     watermark_color: 'Watermark Color',
     watermark_font_size: 'Watermark Fontsize',
     watermark_space: 'Watermark Space',
-    horizontal: 'Horizontal',
-    vertical: 'Vertical',
+    horizontal: 'Horizontal Space',
+    vertical: 'Vertical Space',
     reset: 'Reset',
     preview: 'Preview',
     save: 'Save'

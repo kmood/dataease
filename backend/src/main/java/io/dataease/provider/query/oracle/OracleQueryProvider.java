@@ -434,9 +434,9 @@ public class OracleQueryProvider extends QueryProvider {
         fieldCustomFilter.add(chartFieldCustomFilterDTO);
 
         if (isTable) {
-            return "SELECT * FROM (" + sqlFix(originalTableInfo(table, xAxis, fieldCustomFilter, rowPermissionsTree, extFilterRequestList, ds, view)) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM >= " + (pageInfo.getGoPage() - 1) * pageInfo.getPageSize();
+            return "SELECT * FROM (" + sqlFix(originalTableInfo(table, xAxis, fieldCustomFilter, rowPermissionsTree, extFilterRequestList, ds, view)) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM > " + (pageInfo.getGoPage() - 1) * pageInfo.getPageSize();
         } else {
-            return "SELECT * FROM (" + sqlFix(originalTableInfo("(" + sqlFix(table) + ")", xAxis, fieldCustomFilter, rowPermissionsTree, extFilterRequestList, ds, view)) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM >= " + (pageInfo.getGoPage() - 1) * pageInfo.getPageSize();
+            return "SELECT * FROM (" + sqlFix(originalTableInfo("(" + sqlFix(table) + ")", xAxis, fieldCustomFilter, rowPermissionsTree, extFilterRequestList, ds, view)) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM > " + (pageInfo.getGoPage() - 1) * pageInfo.getPageSize();
         }
     }
 
@@ -866,7 +866,7 @@ public class OracleQueryProvider extends QueryProvider {
             schema = String.format(OracleConstants.KEYWORD_TABLE, schema);
             return "SELECT COUNT(*) from " + schema + "." + String.format(OracleConstants.KEYWORD_TABLE, sql);
         } else {
-            return "SELECT COUNT(*) from ( " + sql + " ) DE_COUNT_TEMP";
+            return "SELECT COUNT(*) from ( " + sqlFix(sql) + " ) DE_COUNT_TEMP";
         }
     }
 
@@ -880,6 +880,7 @@ public class OracleQueryProvider extends QueryProvider {
             ChartViewFieldDTO f = new ChartViewFieldDTO();
             f.setOriginName(datasetTableField.getOriginName());
             f.setDeType(0);
+            f.setType(datasetTableField.getType());
             xAxis.add(f);
         });
 
@@ -916,6 +917,9 @@ public class OracleQueryProvider extends QueryProvider {
                     continue;
                 }
                 String originField = String.format(OracleConstants.KEYWORD_FIX, tableObj.getTableAlias(), x.getOriginName());
+                if(xAxis.get(i).getType().equals("DATE")){
+                    originField = String.format(OracleConstants.TO_CHAR, originField, OracleConstants.DEFAULT_DATE_FORMAT);
+                }
                 String fieldAlias = String.format(OracleConstants.KEYWORD_TABLE, x.getOriginName());
                 xFields.add(getXFields(x, originField, fieldAlias));
             }
@@ -942,7 +946,7 @@ public class OracleQueryProvider extends QueryProvider {
                 .build();
         if (ObjectUtils.isNotEmpty(tableSQL)) st.add("table", tableSQL);
 
-        return "SELECT * FROM (" + sqlFix(st.render()) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM >= DE_OFFSET";
+        return "SELECT * FROM (" + sqlFix(st.render()) + ") DE_RESULT_TMP " + " WHERE DE_ROWNUM > DE_OFFSET";
     }
 
     @Override

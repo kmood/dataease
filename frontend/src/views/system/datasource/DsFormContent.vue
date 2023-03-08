@@ -118,7 +118,33 @@
                   :key="item.id"
                   :label="item.name"
                   :value="item.id"
-                />
+                >
+                  <span
+                    v-if="
+                      item.status !== 'Error' &&
+                      item.status !== 'Warning'
+                  "
+                  >
+                  <svg-icon
+                    icon-class="db-de"
+                  />
+                </span>
+                  <span v-if="item.status === 'Error'">
+                  <svg-icon
+                    icon-class="de-ds-error"
+                    class="ds-icon-scene"
+                  />
+                </span>
+                  <span v-if="item.status === 'Warning'">
+                  <svg-icon
+                    icon-class="de-ds-warning"
+                    class="ds-icon-scene"
+                  />
+                </span>
+                  <span>
+                    {{ item.name }}
+                  </span>
+                </el-option>
               </el-select>
             </el-form-item>
           </el-form>
@@ -662,7 +688,7 @@ export default {
     this.$emit('setParams', { ...this.params })
     this.$nextTick(() => {
       this.disabled = appMarketCheck ? !this.appMarketEdit : (Boolean(id) && showModel === 'show' && !this.canEdit)
-      if (this.configFromTabs.editor === 'editor') {
+      if (this.configFromTabs?.editor === 'editor') {
         this.$emit('editeTodisable', true)
       }
     })
@@ -964,6 +990,7 @@ export default {
           status = valid
         })
       }
+      this.$refs.dsForm.validate()
       if (!status) {
         return
       }
@@ -991,6 +1018,7 @@ export default {
             delete item.status
           })
           form.configuration = Base64.encode(JSON.stringify(form.apiConfiguration))
+          form.apiConfiguration = []
         } else {
           form.configuration = Base64.encode(JSON.stringify(form.configuration))
         }
@@ -1086,6 +1114,11 @@ export default {
         }
       })
     },
+    reloadStatus(statusMap = {}) {
+      this.form.apiConfiguration.forEach(ele => {
+         ele.status = statusMap[ele.name] || ele.status
+      })
+    },
     validaDatasource() {
       if (!this.form.configuration.schema && this.form.type === 'oracle') {
         this.openMessageSuccess('datasource.please_choose_schema', 'error')
@@ -1112,6 +1145,7 @@ export default {
           }
         })
       }
+      this.$refs.dsForm.validate()
       if (!status) {
         return
       }
@@ -1128,12 +1162,16 @@ export default {
           const data = JSON.parse(JSON.stringify(this.form))
           if (data.type === 'api') {
             data.configuration = Base64.encode(JSON.stringify(data.apiConfiguration))
+            data.apiConfiguration = []
           } else {
             data.configuration = Base64.encode(JSON.stringify(data.configuration))
           }
           data.configurationEncryption = true
           if (data.showModel === 'show' && !this.canEdit) {
             validateDsById(data.id).then((res) => {
+              if (data.type === 'api') {
+                this.reloadStatus(JSON.parse(res.data?.status || '{}'))
+              }
               if (res.success) {
                 this.openMessageSuccess('datasource.validate_success')
               } else {

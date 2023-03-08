@@ -65,7 +65,9 @@
         <div style="height: calc(100% - 36px)">
           <ds-form-content
             @editeTodisable="editDatasource"
+            :canEdit="canEdit"
             ref="DsFormContent"
+            @refresh-type="refreshType"
             :config-from-tabs="configFromTabs"
           />
         </div>
@@ -100,6 +102,9 @@ export default {
     }
   },
   methods: {
+    refreshType(form) {
+      this.$emit('refresh-type', form)
+    },
     editDatasource(type = false) {
       this.$refs.DsFormContent.editDatasource(type)
       this.canEdit = type

@@ -34,6 +34,7 @@ import io.dataease.plugins.common.base.mapper.*;
 import io.dataease.plugins.common.constants.DatasetType;
 import io.dataease.plugins.common.constants.DatasourceTypes;
 import io.dataease.plugins.common.constants.DeTypeConstants;
+import io.dataease.plugins.common.dto.chart.ChartViewFieldDTO;
 import io.dataease.plugins.common.dto.dataset.SqlVariableDetails;
 import io.dataease.plugins.common.dto.datasource.DataSourceType;
 import io.dataease.plugins.common.dto.datasource.TableField;
@@ -143,7 +144,7 @@ public class DataSetTableService {
     private static boolean isUpdatingDatasetTableStatus = false;
     private static final String lastUpdateTime = "${__last_update_time__}";
     private static final String currentUpdateTime = "${__current_update_time__}";
-    private static final String regex = "\\$\\{(.*?)\\}";
+    public static final String regex = "\\$\\{(.*?)\\}";
     private static final String SubstitutedParams = "DATAEASE_PATAMS_BI";
     private static final String SubstitutedSql = " 'BI' = 'BI' ";
 
@@ -700,7 +701,7 @@ public class DataSetTableService {
                 datasourceRequest.setDatasource(ds);
                 DataTableInfoDTO dataTableInfo = new Gson().fromJson(datasetTable.getInfo(), DataTableInfoDTO.class);
                 String sql = dataTableInfo.isBase64Encryption() ? new String(java.util.Base64.getDecoder().decode(dataTableInfo.getSql())) : dataTableInfo.getSql();
-                sql = handleVariableDefaultValue(sql, null, ds.getType());
+                sql = handleVariableDefaultValue(sql, datasetTable.getSqlVariableDetails(), ds.getType(), false);
                 QueryProvider qp = ProviderFactory.getQueryProvider(ds.getType());
                 datasourceRequest.setQuery(
                         qp.createQuerySQLWithPage(sql, fields, page, pageSize, realSize, false, null, rowPermissionsTree));
@@ -712,6 +713,7 @@ public class DataSetTableService {
                 datasourceRequest.setPreviewData(true);
                 try {
                     datasourceRequest.setPageable(true);
+                    datasourceRequest.setPermissionFields(fields);
                     data.addAll(datasourceProvider.getData(datasourceRequest));
                 } catch (Exception e) {
                     logger.error(e.getMessage());
@@ -972,7 +974,11 @@ public class DataSetTableService {
             return new ArrayList<>();
         }
         DatasetTable datasetTable = datasetTableMapper.selectByPrimaryKey(id);
-        return getSqlVariableDetails(type, Arrays.asList(datasetTable));
+        if (datasetTable != null) {
+            return getSqlVariableDetails(type, Arrays.asList(datasetTable));
+        } else {
+            return null;
+        }
     }
 
     private List<SqlVariableDetails> getSqlVariableDetails(String type, List<DatasetTable> datasetTables) {
@@ -1043,7 +1049,7 @@ public class DataSetTableService {
         }
     }
 
-    public String handleVariableDefaultValue(String sql, String sqlVariableDetails, String dsType) {
+    public String handleVariableDefaultValue(String sql, String sqlVariableDetails, String dsType, boolean isEdit) {
         if (StringUtils.isEmpty(sql)) {
             DataEaseException.throwException(Translator.get("i18n_sql_not_empty"));
         }
@@ -1052,15 +1058,19 @@ public class DataSetTableService {
             Matcher matcher = pattern.matcher(sql);
             while (matcher.find()) {
                 SqlVariableDetails defaultsSqlVariableDetail = null;
-                List<SqlVariableDetails> defaultsSqlVariableDetails = new Gson().fromJson(sqlVariableDetails, new TypeToken<List<SqlVariableDetails>>() {
-                }.getType());
+                List<SqlVariableDetails> defaultsSqlVariableDetails = new Gson().fromJson(sqlVariableDetails, new TypeToken<List<SqlVariableDetails>>() {}.getType());
                 for (SqlVariableDetails sqlVariableDetail : defaultsSqlVariableDetails) {
                     if (matcher.group().substring(2, matcher.group().length() - 1).equalsIgnoreCase(sqlVariableDetail.getVariableName())) {
                         defaultsSqlVariableDetail = sqlVariableDetail;
                         break;
                     }
                 }
-                if (defaultsSqlVariableDetail != null && StringUtils.isNotEmpty(defaultsSqlVariableDetail.getDefaultValue())) {
+                if (!isEdit && defaultsSqlVariableDetail != null && defaultsSqlVariableDetail.getDefaultValueScope() != null &&
+                        defaultsSqlVariableDetail.getDefaultValueScope().equals(SqlVariableDetails.DefaultValueScope.ALLSCOPE) && StringUtils.isNotEmpty(defaultsSqlVariableDetail.getDefaultValue())) {
+                    sql = sql.replace(matcher.group(), defaultsSqlVariableDetail.getDefaultValue());
+                }
+                if (isEdit && defaultsSqlVariableDetail != null && defaultsSqlVariableDetail.getDefaultValueScope() != null &&
+                        defaultsSqlVariableDetail.getDefaultValueScope().equals(SqlVariableDetails.DefaultValueScope.EDIT) && StringUtils.isNotEmpty(defaultsSqlVariableDetail.getDefaultValue())) {
                     sql = sql.replace(matcher.group(), defaultsSqlVariableDetail.getDefaultValue());
                 }
             }
@@ -1086,7 +1096,7 @@ public class DataSetTableService {
         if (!hasVariables && !tmpSql.contains(SubstitutedParams)) {
             return tmpSql;
         }
-        CCJSqlParserUtil.parse(tmpSql, parser -> parser.withSquareBracketQuotation(true));
+
         Statement statement = CCJSqlParserUtil.parse(tmpSql);
         Select select = (Select) statement;
 
@@ -1119,9 +1129,34 @@ public class DataSetTableService {
                 if (fromItem.getAlias() == null) {
                     throw new Exception("Failed to parse sql, Every derived table must have its own alias！");
                 }
-                subSelect.setAlias(new Alias(fromItem.getAlias().toString()));
+                subSelect.setAlias(new Alias(fromItem.getAlias().toString(), false));
             }
             plainSelect.setFromItem(subSelect);
+        }
+        List<Join> joins = plainSelect.getJoins();
+        if (joins != null) {
+            List<Join> joinsList = new ArrayList<>();
+            for (Join join : joins) {
+                FromItem rightItem = join.getRightItem();
+                if (rightItem instanceof SubSelect) {
+                    SelectBody selectBody = ((SubSelect) rightItem).getSelectBody();
+                    SubSelect subSelect = new SubSelect();
+                    Select subSelectTmp = (Select) CCJSqlParserUtil.parse(removeVariables(selectBody.toString(), dsType));
+                    PlainSelect subPlainSelect = ((PlainSelect) subSelectTmp.getSelectBody());
+                    subSelect.setSelectBody(subPlainSelect);
+                    if (dsType.equals(DatasourceTypes.oracle.getType())) {
+                        subSelect.setAlias(new Alias(rightItem.getAlias().toString(), false));
+                    } else {
+                        if (rightItem.getAlias() == null) {
+                            throw new Exception("Failed to parse sql, Every derived table must have its own alias！");
+                        }
+                        subSelect.setAlias(new Alias(rightItem.getAlias().toString(), false));
+                    }
+                    join.setRightItem(subSelect);
+                }
+                joinsList.add(join);
+            }
+            plainSelect.setJoins(joinsList);
         }
         Expression expr = plainSelect.getWhere();
         if (expr == null) {
@@ -1230,7 +1265,7 @@ public class DataSetTableService {
         datasourceRequest.setDatasource(ds);
 
 
-        sql = handleVariableDefaultValue(sql, dataSetTableRequest.getSqlVariableDetails(), ds.getType());
+        sql = handleVariableDefaultValue(sql, dataSetTableRequest.getSqlVariableDetails(), ds.getType(), true);
         if (StringUtils.isEmpty(sql)) {
             DataEaseException.throwException(Translator.get("i18n_sql_not_empty"));
         }
@@ -1896,7 +1931,7 @@ public class DataSetTableService {
             QueryProvider qp = ProviderFactory.getQueryProvider(ds.getType());
             DataTableInfoDTO dataTableInfo = new Gson().fromJson(datasetTable.getInfo(), DataTableInfoDTO.class);
             String sql = dataTableInfo.isBase64Encryption() ? new String(java.util.Base64.getDecoder().decode(dataTableInfo.getSql())) : dataTableInfo.getSql();
-            sql = handleVariableDefaultValue(sql, null, ds.getType());
+            sql = handleVariableDefaultValue(sql, null, ds.getType(), false);
             String sqlAsTable = qp.createSQLPreview(sql, null);
             datasourceRequest.setQuery(sqlAsTable);
             fields = datasourceProvider.fetchResultField(datasourceRequest);
@@ -2233,6 +2268,9 @@ public class DataSetTableService {
         }
         Set<String> nameSet = new HashSet<>();
         for (DataSetTableRequest table : datasetTable) {
+            if(StringUtils.isEmpty(table.getName())){
+                throw new RuntimeException(Translator.get("I18n_name_cant_empty"));
+            }
             nameSet.add(table.getName());
         }
         if (nameSet.size() != datasetTable.size()) {
@@ -2375,13 +2413,13 @@ public class DataSetTableService {
         String suffix = filename.substring(filename.lastIndexOf(".") + 1);
         if (StringUtils.equalsIgnoreCase(suffix, "xls")) {
             ExcelXlsReader excelXlsReader = new ExcelXlsReader();
-            excelXlsReader.setObtainedNum(100);
+            excelXlsReader.setObtainedNum(1000);
             excelXlsReader.process(inputStream);
             excelSheetDataList = excelXlsReader.totalSheets;
         }
         if (StringUtils.equalsIgnoreCase(suffix, "xlsx")) {
             ExcelXlsxReader excelXlsxReader = new ExcelXlsxReader();
-            excelXlsxReader.setObtainedNum(100);
+            excelXlsxReader.setObtainedNum(1000);
             excelXlsxReader.process(inputStream);
             excelSheetDataList = excelXlsxReader.totalSheets;
         }
@@ -2402,7 +2440,7 @@ public class DataSetTableService {
             int num = 1;
             String line;
             while ((line = reader.readLine()) != null) {
-                if (num > 100) {
+                if (num > 1000) {
                     break;
                 }
                 data.add(Arrays.asList(line.split(",")));
@@ -2836,7 +2874,8 @@ public class DataSetTableService {
                 hasSubBinaryExpression = false;
                 try {
                     BinaryExpression rightBinaryExpression = (BinaryExpression) expr.getRightExpression();
-                    hasSubBinaryExpression = rightBinaryExpression instanceof AndExpression || rightBinaryExpression instanceof OrExpression;;
+                    hasSubBinaryExpression = rightBinaryExpression instanceof AndExpression || rightBinaryExpression instanceof OrExpression;
+                    ;
                 } catch (Exception e) {
                 }
                 if (expr.getRightExpression() instanceof BinaryExpression && !hasSubBinaryExpression && hasVariable(expr.getRightExpression().toString())) {

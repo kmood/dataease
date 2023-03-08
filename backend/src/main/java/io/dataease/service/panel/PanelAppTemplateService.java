@@ -103,7 +103,7 @@ public class PanelAppTemplateService {
         PanelAppTemplateWithBLOBs requestTemplate = new PanelAppTemplateWithBLOBs();
         BeanUtils.copyBean(requestTemplate, request);
         //Store static resource into the server
-        if (StringUtils.isNotEmpty(request.getSnapshot())) {
+        if (StringUtils.isNotEmpty(request.getSnapshot()) && request.getSnapshot().indexOf("static-resource") == -1) {
             String snapshotName = "app-template-" + UUIDUtil.getUUIDAsString() + ".jpeg";
             staticResourceService.saveSingleFileToServe(snapshotName, request.getSnapshot().replace("data:image/jpeg;base64,", ""));
             requestTemplate.setSnapshot("/" + UPLOAD_URL_PREFIX + '/' + snapshotName);
@@ -118,6 +118,16 @@ public class PanelAppTemplateService {
     public String nameCheck(PanelAppTemplateRequest request) {
         return nameCheck(request.getOptType(), request.getName(), request.getPid(), request.getId());
 
+    }
+
+    public void move(PanelAppTemplateRequest request) {
+        if (!CommonConstants.CHECK_RESULT.NONE.equals(nameCheck(CommonConstants.OPT_TYPE.INSERT, request.getName(), request.getPid(), request.getId()))) {
+            throw new RuntimeException("当前名称在目标分类中已经存在！请选择其他分类或修改名称");
+        }
+        PanelAppTemplateWithBLOBs appTemplate = new PanelAppTemplateWithBLOBs();
+        appTemplate.setId(request.getId());
+        appTemplate.setPid(request.getPid());
+        panelAppTemplateMapper.updateByPrimaryKeySelective(appTemplate);
     }
 
     //名称检查
@@ -353,7 +363,7 @@ public class PanelAppTemplateService {
                 //替换datasetId
                 chartViewField.setTableId(datasetsRealMap.get(chartViewField.getTableId()));
                 //替换chartViewId
-                chartViewField.setChartId(chartViewsRealMap.get(chartViewField.getId()));
+                chartViewField.setChartId(chartViewsRealMap.get(chartViewField.getChartId()));
                 //替换datasetFieldId
                 datasetFieldsRealMap.forEach((k, v) -> {
                     chartViewField.setOriginName(chartViewField.getOriginName().replaceAll(k, v));

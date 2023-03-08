@@ -277,8 +277,8 @@ export const THEME_ATTR_TRANS_SLAVE1_BACKGROUND = {
 
 // 移动端特殊属性
 export const mobileSpecialProps = {
-  'lineWidth': 3, // 线宽固定值
-  'lineSymbolSize': 5// 折点固定值
+  'lineWidth': 2, // 线宽固定值
+  'lineSymbolSize': 8// 折点固定值
 }
 
 export function getScaleValue(propValue, scale) {
@@ -381,7 +381,10 @@ export function adaptCurThemeCommonStyle(component) {
   if (isFilterComponent(component.component)) {
     const filterStyle = store.state.canvasStyleData.chartInfo.filterStyle
     for (const styleKey in filterStyle) {
-      Vue.set(component.style, styleKey, filterStyle[styleKey])
+      // 位置属性不修改
+      if (styleKey !== 'horizontal' && styleKey !== 'vertical') {
+        Vue.set(component.style, styleKey, filterStyle[styleKey])
+      }
     }
   } else if (isTabComponent(component.component)) {
     const tabStyle = store.state.canvasStyleData.chartInfo.tabStyle

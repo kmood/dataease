@@ -70,6 +70,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -208,7 +209,7 @@ public class ExtractDataService {
                         for (DatasetTableField oldField : oldFields) {
                             boolean delete = true;
                             for (DatasetTableField datasetTableField : datasetTableFields) {
-                                if (oldField.getDataeaseName().equalsIgnoreCase(datasetTableField.getDataeaseName()) && oldField.getDeExtractType().equals(datasetTableField.getDeExtractType())) {
+                                if (oldField.getDataeaseName().equalsIgnoreCase(datasetTableField.getDataeaseName())) {
                                     delete = false;
                                 }
                             }
@@ -220,7 +221,7 @@ public class ExtractDataService {
                         for (DatasetTableField datasetTableField : datasetTableFields) {
                             boolean add = true;
                             for (DatasetTableField oldField : oldFields) {
-                                if (oldField.getDataeaseName().equalsIgnoreCase(datasetTableField.getDataeaseName()) && oldField.getDeExtractType().equals(datasetTableField.getDeExtractType())) {
+                                if (oldField.getDataeaseName().equalsIgnoreCase(datasetTableField.getDataeaseName())) {
                                     add = false;
                                 }
                             }
@@ -740,6 +741,39 @@ public class ExtractDataService {
                 excelXlsxReader.process(new FileInputStream(excelSheetData.getPath()));
                 totalSheets = excelXlsxReader.totalSheets;
             }
+
+            if (StringUtils.equalsIgnoreCase(suffix, "csv")) {
+                List<TableField> fields = new ArrayList<>();
+                BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(excelSheetData.getPath()), StandardCharsets.UTF_8));
+                String s = reader.readLine();// first line
+                String[] split = s.split(",");
+                for (String s1 : split) {
+                    TableField tableFiled = new TableField();
+                    tableFiled.setFieldName(s1);
+                    tableFiled.setRemarks(s1);
+                    tableFiled.setFieldType("TEXT");
+                    fields.add(tableFiled);
+                }
+                List<List<String>> csvData = new ArrayList<>();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if(line.endsWith(",")){
+                        List<String> list = new ArrayList<>(Arrays.asList(line.split(",")));
+                        list.add("");
+                        csvData.add(list);
+                    }else {
+                        csvData.add(Arrays.asList(line.split(",")));
+                    }
+                }
+                ExcelSheetData csvSheetData = new ExcelSheetData();
+                String[] fieldArray = fields.stream().map(TableField::getFieldName).toArray(String[]::new);
+                csvSheetData.setFields(fields);
+                csvSheetData.setData(csvData);
+                csvSheetData.setExcelLabel(excelSheetData.getExcelLabel());
+                csvSheetData.setFieldsMd5(Md5Utils.md5(StringUtils.join(fieldArray, ",")));
+                totalSheets = Arrays.asList(csvSheetData);
+            }
+
 
             for (ExcelSheetData sheet : totalSheets) {
                 if (sheet.getExcelLabel().equalsIgnoreCase(excelSheetData.getExcelLabel())) {

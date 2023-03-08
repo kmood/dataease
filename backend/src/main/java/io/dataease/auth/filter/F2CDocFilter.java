@@ -40,10 +40,10 @@ public class F2CDocFilter extends AccessControlFilter {
             DefaultLicenseService defaultLicenseService = CommonBeanFactory.getBean(DefaultLicenseService.class);
             F2CLicenseResponse f2CLicenseResponse = defaultLicenseService.validateLicense();
             Status status = f2CLicenseResponse.getStatus();
-            /*if (status != Status.valid) {
+            if (status != Status.valid) {
                 request.setAttribute(RESULT_URI_KEY, NOLIC_PAGE);
                 return false;
-            }*/
+            }
         } catch (Exception e) {
             request.setAttribute(RESULT_URI_KEY, NOLIC_PAGE);
             LogUtil.error(e.getMessage(), e);
@@ -79,12 +79,7 @@ public class F2CDocFilter extends AccessControlFilter {
         if (StringUtils.isBlank(authorization)) {
             return false;
         }
-        if (JWTUtils.loginExpire(authorization)) {
-            return false;
-        }
-        if (JWTUtils.needRefresh(authorization)) {
-            authorization = refreshToken(authorization);
-        }
+
         TokenInfo tokenInfo = JWTUtils.tokenInfoByToken(authorization);
         AuthUserService authUserService = CommonBeanFactory.getBean(AuthUserService.class);
         SysUserEntity user = authUserService.getUserById(tokenInfo.getUserId());
@@ -94,20 +89,6 @@ public class F2CDocFilter extends AccessControlFilter {
         String password = user.getPassword();
         boolean verify = JWTUtils.verify(authorization, tokenInfo, password);
         return verify;
-    }
-
-    private String refreshToken(String token) throws Exception {
-        TokenInfo tokenInfo = JWTUtils.tokenInfoByToken(token);
-        AuthUserService authUserService = CommonBeanFactory.getBean(AuthUserService.class);
-        SysUserEntity user = authUserService.getUserById(tokenInfo.getUserId());
-        if (user == null) {
-            DataEaseException.throwException(Translator.get("i18n_not_find_user"));
-        }
-        String password = user.getPassword();
-        Algorithm algorithm = Algorithm.HMAC256(password);
-        JWTUtils.verifySign(algorithm, token);
-        String newToken = JWTUtils.sign(tokenInfo, password);
-        return newToken;
     }
 
     @Override

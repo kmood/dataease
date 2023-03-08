@@ -76,6 +76,7 @@
         >
           <Preview
             :component-data="tabCanvasComponentData(item.name)"
+            :ref="'canvasTabRef-'+item.name"
             :canvas-style-data="canvasStyleData"
             :canvas-id="element.id+'-'+item.name"
             :panel-info="panelInfo"
@@ -410,11 +411,16 @@ export default {
         const _this = this
         _this.$nextTick(() => {
           try {
+            const targetRef = _this.$refs['canvasTabRef-' + _this.activeTabName]
+            if (targetRef) {
+              targetRef[0].restore()
+            }
             _this.$refs[this.activeTabName][0].resizeChart()
           } catch (e) {
             // ignore
           }
         })
+        bus.$emit('tab-canvas-change', this.activeCanvasId)
       }
     },
     active: {
@@ -457,6 +463,23 @@ export default {
     bus.$off('add-new-tab', this.addNewTab)
   },
   methods: {
+    getType() {
+      return this.element.type
+    },
+    getWrapperChildRefs() {
+      let refsSubAll = []
+      const _this = this
+      this.element.options.tabList.forEach(tabItem => {
+        const refsSub = _this.$refs['canvasTabRef-' + tabItem.name]
+        if (refsSub && refsSub.length) {
+          const refsSubArray = refsSub[0].getWrapperChildRefs()
+          if (refsSubArray && refsSubArray.length > 0) {
+            refsSubAll.push.apply(refsSubAll, refsSubArray)
+          }
+        }
+      })
+      return refsSubAll
+    },
     titleStyle(itemName) {
       if (this.activeTabName === itemName) {
         return {

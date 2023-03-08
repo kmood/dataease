@@ -1,5 +1,6 @@
 <template>
   <el-dialog
+    v-loading="loading"
     :title="formType == 'add' ? $t('user.create') : $t('user.modify')"
     :visible.sync="dialogVisible"
     class="user-editer-form"
@@ -223,13 +224,13 @@
 </template>
 
 <script>
-import { PHONE_REGEX } from '@/utils/validate'
 import { getDeptTree, treeByDeptId } from '@/api/system/dept'
 import { addUser, editUser, allRoles, queryAssist } from '@/api/system/user'
 import { pluginLoaded, defaultPwd, wecomStatus, dingtalkStatus, larkStatus } from '@/api/user'
 export default {
   data() {
     return {
+      loading: false,
       defaultProps: {
         children: 'children',
         label: 'label',
@@ -280,7 +281,7 @@ export default {
         ],
         phone: [
           {
-            pattern: PHONE_REGEX,
+            validator: this.phoneRegex,
             message: this.$t('user.phone_format'),
             trigger: 'blur'
           }
@@ -413,6 +414,20 @@ export default {
         callback()
       }
     },
+    phoneRegex(rule, value, callback) {
+      if (!value || !`${value}`.trim()) {
+        callback()
+        return
+      }
+      const regep = new RegExp(/^1[3-9]\d{9}$/)
+
+      if (!regep.test(value)) {
+        const msg = this.$t('user.phone_format')
+        callback(new Error(msg))
+      } else {
+        callback()
+      }
+    },
     validateUsername(rule, value, callback) {
       const pattern = '^[a-zA-Z][a-zA-Z0-9\._-]*$'
       const regep = new RegExp(pattern)
@@ -540,12 +555,13 @@ export default {
     save() {
       this.$refs.createUserForm.validate((valid) => {
         if (valid) {
-          // !this.form.deptId && (this.form.deptId = 0)
+          this.loading = true
           const method = this.formType === 'add' ? addUser : editUser
           method(this.form).then((res) => {
             this.$success(this.$t('commons.save_success'))
             this.reset()
             this.$emit('saved')
+            this.loading = false
           })
         } else {
           return false

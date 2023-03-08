@@ -1365,6 +1365,7 @@ export default {
     chart_table_pivot: '透視表',
     table_pivot_row: '數據行',
     field_error_tips: '該字段所對應的數據集原始字段發生變更（包括維度、指標，字段類型，字段被刪除等），建議重新編輯',
+    mark_field_error: '數據集變更，當前字段不存在，請重新選擇',
     table_border_color: '邊框顏色',
     table_header_align: '表頭對齊方式',
     table_item_align: '表格對齊方式',
@@ -1502,15 +1503,24 @@ export default {
                   折線（區域）圖、柱狀（條形）圖、儀表盤 : {a}（系列名稱），{b}（類目值），{c}（數值）<br>
                   餅圖、漏鬥圖: {a}（系列名稱），{b}（數據項名稱），{c}（數值）, {d}（百分比）<br>
                   地圖 : {a}（系列名稱），{b}（區域名稱），{c}（合並數值）, {d}（無）<br>
-                  散點圖（氣泡）圖 : {a}（系列名稱），{b}（數據名稱），{c}（數值數組）, {d}（無）`
+                  散點圖（氣泡）圖 : {a}（系列名稱），{b}（數據名稱），{c}（數值數組）, {d}（無）`,
+    h_position: '水平位置',
+    v_position: '垂直位置',
+    p_left: '左對齊',
+    p_right: '右對齊',
+    p_top: '上對齊',
+    p_bottom: '下對齊',
+    p_center: '居中'
   },
   dataset: {
+    scope_edit: '僅編輯時生效',
+    scope_all: '數据集預覽時全域生效',
     spend_time: '耗時',
     sql: 'SQL 語句',
     sql_result: '運行結果',
     parse_filed: '解析字段',
     field_rename: '字段重命名',
-    params_work: '僅在編輯 sql 時生效',
+    params_work: '僅編輯時生效：參數值僅在數据集編輯時生效； 全域生效：在數据集查看、預覽、以及用到數据集的視圖中均生效。',
     sql_variable_limit_1: '1、SQL變數只能在WHERE條件中使用',
     sql_variable_limit_2: '2、示例：select * from table_name where column_name1=\'${param_name1}\' and column_name2 in \'${param_name2}\'',
     selesql_variable_limit_2ct_year: '選擇年',
@@ -1870,6 +1880,7 @@ export default {
     all_compute_mode: '直連、抽取模式',
     extra_params: '額外的JDBC連接字符串',
     please_input_dataPath: '請輸入 JsonPath 數據路徑',
+    show_api_data: '查看API数据結構',
     warning: '包含無效數據表',
     data_table: '數據表',
     data_table_name: '數據表名稱',
@@ -1880,7 +1891,9 @@ export default {
     base_info: '基礎信息',
     column_info: '資料結構',
     request: '請求',
+    isUseJsonPath: '是否指定JsonPath',
     path_all_info: '請輸入完整地址',
+    jsonpath_info: '請輸入JsonPath',
     req_param: '請求參數',
     headers: '請求頭',
     key: '鍵',
@@ -1949,6 +1962,7 @@ export default {
     back_parent: '返回上一級'
   },
   panel: {
+    forbidden_copy: '當前組件不允許復製',
     url_check_error: '跳轉錯誤，URL不合法',
     view_style: '視圖樣式',
     view_color_setting: '視圖配色',
@@ -2237,6 +2251,8 @@ export default {
     aided_grid: '輔助設計網格',
     aided_grid_open: '打開',
     aided_grid_close: '關閉',
+    export_pdf_page: '分頁線',
+    export_pdf_page_remark: '僅對API導出儀表板PDF分頁有效',
     subject_no_edit: '繫統主題不能修改',
     subject_name_not_null: '主題名稱需要1~20字符',
     is_enable: '是否啟用',
@@ -2296,7 +2312,13 @@ export default {
     fold: '收起',
     expand: '展開',
     pdf_export: 'PDF 導出',
-    switch_pdf_template: '切換 PDF 模板'
+    switch_pdf_template: '切換 PDF 模板',
+    pdf_template_with_params: '默認模板(加參數樣式)',
+    pdf_template_only_pic: '默認模板(只截圖)',
+    panel_name: '儀錶板名稱',
+    export_user: '導出用戶',
+    export_time: '導出時間',
+    you_can_type_here: '可以在這裡輸入其他內容'
   },
   plugin: {
     local_install: '本地安裝',
@@ -2419,7 +2441,9 @@ export default {
     standard: '標準版',
     enterprise: '企業版',
     support: '獲取技術支持',
-    update_success: '更新成功'
+    update_success: '更新成功',
+    serial_no: '序列號',
+    remark: '備註'
   },
   template: {
     exit_same_template_check: '當前分類存在相同名稱模闆，是否覆蓋？',
@@ -2780,6 +2804,8 @@ export default {
   'I18N_USER_TEMPLATE_ERROR': '模版錯誤',
   'i18n_max_user_import_size': '文件最大不能超過10M',
   app_template: {
+    move: '移動',
+    move_item: '移動應用',
     datasource_new: '新建',
     datasource_history: '復用',
     datasource_from: '數據來源',
@@ -2818,9 +2844,9 @@ export default {
   },
   watermark: {
     support_params: '當前支持的參數：',
-    enable: '啟用',
+    enable: '啟用水印',
     enable_panel_custom: '允許儀表板單獨打開或者關閉水印',
-    content: '內容',
+    content: '水印內容',
     custom_content: '自定義公式',
     account: '賬號',
     nick_name: '昵稱',
@@ -2829,8 +2855,8 @@ export default {
     watermark_color: '水印顏色',
     watermark_font_size: '水印字號',
     watermark_space: '水印間距',
-    horizontal: '橫向',
-    vertical: '縱向',
+    horizontal: '橫向間距',
+    vertical: '縱向間距',
     reset: '重置',
     preview: '預覽',
     save: '保存'

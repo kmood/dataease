@@ -175,6 +175,12 @@ export default {
     this.$set(this.element.style, 'innerBgColor', innerBgColor || '')
   },
   methods: {
+    getComponentId() {
+      return this.element.id
+    },
+    getCanvasId() {
+      return this.canvasId
+    },
     handlerPositionChange(val) {
       const { horizontal = 'left', vertical = 'center' } = val
       this.titleStyle = {
@@ -182,14 +188,19 @@ export default {
         textAlign: horizontal
       }
       this.outsideStyle = {
-        flexWrap: 'wrap'
+        flexDirection: 'column'
       }
+
       if (vertical !== 'top' && this.element.component !== 'de-select-grid') {
         this.titleStyle = null
         this.outsideStyle = {
           flexDirection: horizontal === 'right' ? 'row-reverse' : '',
           alignItems: 'center'
         }
+      }
+
+      if (this.element.component === 'de-select-grid') {
+        this.$set(this.outsideStyle, 'flexDirection', 'column')
       }
 
       if (vertical !== 'top' && this.element.component === 'de-number-range') {
@@ -226,7 +237,7 @@ export default {
 
 .condition-main {
   position: absolute;
-  overflow: auto;
+  overflow: hidden;
   top: 0px;
   right: 0px;
   bottom: 0px;
@@ -255,7 +266,6 @@ export default {
 
 .condition-content-container {
   position: relative;
-  display: table;
   width: 100%;
   height: 100%;
   white-space: nowrap;
@@ -263,8 +273,6 @@ export default {
 
 .first-element {
   position: relative;
-  display: table-cell;
-  vertical-align: middle;
   margin: 0px;
   padding: 0px;
   height: 100%;
@@ -292,6 +300,7 @@ export default {
   background: #fff;
   border: 1px solid #d7dae2;
   top: 5px;
+  height: 100%;
 }
 
 .condition-main-line {

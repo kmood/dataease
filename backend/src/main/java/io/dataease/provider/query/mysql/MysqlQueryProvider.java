@@ -808,6 +808,7 @@ public class MysqlQueryProvider extends QueryProvider {
             }
             return stringBuilder.toString();
         }).toArray(String[]::new);
+        table = table.trim().startsWith("(") ? table : String.format(MySQLConstants.KEYWORD_TABLE, table);
         return MessageFormat.format("SELECT {0} FROM {1}  LIMIT DE_OFFSET, DE_PAGE_SIZE ", StringUtils.join(array, ","), table);
     }
 
@@ -815,13 +816,13 @@ public class MysqlQueryProvider extends QueryProvider {
         if(isTable){
             return "SELECT COUNT(*) from " + String.format(MySQLConstants.KEYWORD_TABLE, sql);
         }else {
-            return "SELECT COUNT(*) from ( " + sql + " ) DE_COUNT_TEMP";
+            return "SELECT COUNT(*) from ( " + sqlFix(sql) + " ) DE_COUNT_TEMP";
         }
     }
 
     @Override
     public String createRawQuerySQLAsTmp(String sql, List<DatasetTableField> fields) {
-        return createRawQuerySQL(" (" + sqlFix(sql) + ") AS DE_TEMP", fields, null);
+        return createRawQuerySQL("(" + sqlFix(sql) + ") AS DE_TEMP", fields, null);
     }
 
     public String transTreeItem(SQLObj tableObj, DatasetRowPermissionsTreeItem item) {
@@ -1123,6 +1124,7 @@ public class MysqlQueryProvider extends QueryProvider {
     }
 
     private String sqlFix(String sql) {
+        sql = sql.trim();
         if (sql.lastIndexOf(";") == (sql.length() - 1)) {
             sql = sql.substring(0, sql.length() - 1);
         }

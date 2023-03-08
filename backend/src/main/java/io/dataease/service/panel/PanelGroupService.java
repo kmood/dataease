@@ -10,6 +10,7 @@ import io.dataease.auth.api.dto.CurrentUserDto;
 import io.dataease.commons.constants.*;
 import io.dataease.commons.utils.*;
 import io.dataease.controller.request.authModel.VAuthModelRequest;
+import io.dataease.controller.request.chart.ChartExtRequest;
 import io.dataease.controller.request.dataset.DataSetTableRequest;
 import io.dataease.controller.request.panel.*;
 import io.dataease.dto.DatasourceDTO;
@@ -182,7 +183,7 @@ public class PanelGroupService {
     }
 
 
-    public String update(PanelGroupRequest request) {
+    public PanelGroupDTO update(PanelGroupRequest request) {
         String panelId = request.getId();
         request.setUpdateTime(System.currentTimeMillis());
         request.setUpdateBy(AuthUtils.getUser().getUsername());
@@ -254,7 +255,7 @@ public class PanelGroupService {
             DeLogUtils.save(SysLogConstants.OPERATE_TYPE.MODIFY, sourceType, request.getId(), request.getPid(), null, sourceType);
         }
         this.removePanelAllCache(panelId);
-        return panelId;
+        return extPanelGroupMapper.findShortOneWithPrivileges(panelId, String.valueOf(AuthUtils.getUser().getUserId()));
     }
 
     public void move(PanelGroupRequest request) {
@@ -287,21 +288,24 @@ public class PanelGroupService {
 
         List<PanelGroup> checkResult = panelGroupMapper.selectByExample(groupExample);
         if (CollectionUtils.isNotEmpty(checkResult)) {
-            DataEaseException.throwException(Translator.get("I18N_PANEL_EXIST"));
+            DataEaseException.throwException(PanelConstants.PANEL_NODE_TYPE_PANEL.equals(nodeType) ? Translator.get("I18N_PANEL_EXIST") : Translator.get("I18N_FOlDER_EXIST"));
         }
     }
 
 
     public void deleteCircle(String id) {
         Assert.notNull(id, "id cannot be null");
-        sysAuthService.checkTreeNoManageCount("panel", id);
         PanelGroupWithBLOBs panel = panelGroupMapper.selectByPrimaryKey(id);
         SysLogDTO sysLogDTO = DeLogUtils.buildLog(SysLogConstants.OPERATE_TYPE.DELETE, sourceType, panel.getId(), panel.getPid(), null, null);
+        String nodeType = panel.getNodeType();
+        if ("folder".equals(nodeType)) {
+            sysAuthService.checkTreeNoManageCount("panel", id);
+        }
         //清理view 和 view cache
-        extPanelGroupMapper.deleteCircleView(id);
-        extPanelGroupMapper.deleteCircleViewCache(id);
+        extPanelGroupMapper.deleteCircleView(id, nodeType);
+        extPanelGroupMapper.deleteCircleViewCache(id, nodeType);
         // 同时会删除对应默认仪表盘
-        extPanelGroupMapper.deleteCircle(id);
+        extPanelGroupMapper.deleteCircle(id, nodeType);
         storeService.removeByPanelId(id);
         shareService.delete(id, null);
         panelLinkService.deleteByResourceId(id);
@@ -509,6 +513,9 @@ public class PanelGroupService {
             if (dynamicDataMap == null) {
                 DataEaseException.throwException("Please use the template after v1.9");
             }
+            //custom组件替换.tableId 和 parentFieldId 追加识别标识
+            templateData = templateData.replaceAll("\"tableId\":\"", "\"tableId\":\"no_auth");
+            templateData = templateData.replaceAll("\"fieldsParent\":\\{\"id\":\"", "\"fieldsParent\":\\{\"id\":\"no_auth");
 
             List<PanelViewInsertDTO> panelViews = new ArrayList<>();
             List<PanelGroupExtendDataDTO> viewsData = new ArrayList<>();
@@ -646,6 +653,7 @@ public class PanelGroupService {
     public void exportPanelViewDetails(PanelViewDetailsRequest request, HttpServletResponse response) throws IOException {
         OutputStream outputStream = response.getOutputStream();
         try {
+            findExcelData(request);
             String snapshot = request.getSnapshot();
             List<Object[]> details = request.getDetails();
             Integer[] excelTypes = request.getExcelTypes();
@@ -755,18 +763,19 @@ public class PanelGroupService {
                                 cell.setCellStyle(cellStyle);
                                 //设置列的宽度
                                 detailsSheet.setColumnWidth(j, 255 * 20);
-                            } else {
-                                // with DataType
-                                if ((excelTypes[j] == DeTypeConstants.DE_INT || excelTypes[j] == DeTypeConstants.DE_FLOAT) && StringUtils.isNotEmpty(cellValObj.toString())) {
-                                    try {
+                            } else if (cellValObj != null) {
+                                try {
+                                    // with DataType
+                                    if ((excelTypes[j] == DeTypeConstants.DE_INT || excelTypes[j] == DeTypeConstants.DE_FLOAT) && StringUtils.isNotEmpty(cellValObj.toString())) {
                                         cell.setCellValue(Double.valueOf(cellValObj.toString()));
-                                    } catch (Exception e) {
-                                        LogUtil.warn("export excel data transform error");
+                                    } else {
+                                        cell.setCellValue(cellValObj.toString());
                                     }
-                                } else {
-                                    cell.setCellValue(cellValObj.toString());
+                                } catch (Exception e) {
+                                    LogUtil.warn("export excel data transform error");
                                 }
                             }
+
 
                         }
                     }
@@ -923,6 +932,28 @@ public class PanelGroupService {
                     }
                 }
             }
+
+            // 兼容过滤组件使用独立的数据集情况
+            PanelGroupDTO panelGroupInfo = this.findOne(panelId);
+            String panelData = panelGroupInfo.getPanelData();
+            try {
+                if (StringUtils.isNotEmpty(panelData)) {
+                    JSONArray panelDataArray = JSONObject.parseArray(panelData);
+                    for (int i = 0; i < panelDataArray.size(); i++) {
+                        JSONObject element = panelDataArray.getJSONObject(i);
+                        if ("custom".equals(element.getString("type"))) {
+                            JSONObject fieldsParent = element.getJSONObject("options").getJSONObject("attrs").getJSONObject("fieldsParent");
+                            if (ObjectUtils.isNotEmpty(fieldsParent)) {
+                                allTableIds.add(fieldsParent.getString("id"));
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                //ignore
+                LogUtil.warn("custom component dataset id get error");
+            }
+
         }
         datasetTablesInfo = extDataSetTableMapper.findByTableIds(allTableIds);
         //4.获取所有数据集字段信息
@@ -1082,6 +1113,32 @@ public class PanelGroupService {
         request.setUpdateTime(time);
         request.setUpdateBy(AuthUtils.getUser().getUsername());
         panelGroupMapper.updateByPrimaryKeySelective(request);
+    }
+
+    public void findExcelData(PanelViewDetailsRequest request) {
+        ChartViewWithBLOBs viewInfo = chartViewService.get(request.getViewId());
+        if ("table-info".equals(viewInfo.getType())) {
+            try {
+                List<String> excelHeaderKeys = request.getExcelHeaderKeys();
+                ChartExtRequest componentFilterInfo = request.getComponentFilterInfo();
+                componentFilterInfo.setGoPage(1l);
+                componentFilterInfo.setPageSize(1000000l);
+                componentFilterInfo.setExcelExportFlag(true);
+                ChartViewDTO chartViewInfo = chartViewService.getData(request.getViewId(), componentFilterInfo);
+                List<Map> tableRow = (List) chartViewInfo.getData().get("tableRow");
+                List<Object[]> result = new ArrayList<>();
+                for (Map detailMap : tableRow) {
+                    List<Object> detailObj = new ArrayList<>();
+                    for (String key : excelHeaderKeys) {
+                        detailObj.add(detailMap.get(key));
+                    }
+                    result.add(detailObj.toArray());
+                }
+                request.setDetails(result);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
 
     }
 }

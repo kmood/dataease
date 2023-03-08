@@ -77,11 +77,7 @@
               trigger="click"
             >
               <panel-detail-info />
-              <i
-                slot="reference"
-                class="el-icon-warning-outline icon-class"
-                style="margin-left: 4px;cursor: pointer;font-size: 14px;"
-              />
+              <svg-icon slot="reference" style="margin-left: 4px;cursor: pointer;font-size: 14px;" class="icon-class" icon-class="icon_info_outlined" />
             </el-popover>
           </el-col>
           <el-col :span="12">
@@ -98,7 +94,10 @@
               </de-btn>
             </span>
 
-            <span v-if="showType !== 1" style="float: right;margin-right: 10px">
+            <span
+              v-if="showType !== 1"
+              style="float: right;margin-right: 10px"
+            >
               <de-btn
                 secondary
                 @click="share"
@@ -108,7 +107,7 @@
             </span>
 
             <span
-              v-if="panelInfo.status==='publish'"
+              v-if="panelInfo.status==='publish' && !isOtherPlatform"
               style="float: right;margin-right: 10px"
             >
               <de-btn
@@ -120,6 +119,7 @@
             </span>
 
             <span
+              v-if="activeTab!=='panels_star' || (activeTab ==='panels_star' && panelInfo.status === 'publish')"
               style="float: right;margin-right: 10px"
               class="de-tree"
             >
@@ -140,7 +140,7 @@
                   class="de-card-dropdown"
                 >
                   <el-dropdown-item
-                    v-if="panelInfo.status==='publish'"
+                    v-if="panelInfo.status==='publish' && !isOtherPlatform"
                     @click.native="newTab"
                   >
                     <svg-icon
@@ -180,12 +180,12 @@
                   </el-dropdown-item>
 
                   <el-dropdown
+                    v-if="hasDataPermission('export',panelInfo.privileges)&&panelInfo.status==='publish'"
                     style="width: 100%"
+                    trigger="hover"
                     placement="right-start"
                   >
-                    <el-dropdown-item
-                      v-if="hasDataPermission('export',panelInfo.privileges)&&panelInfo.status==='publish'"
-                    >
+                    <div class="el-dropdown-menu__item">
                       <svg-icon
                         icon-class="icon_bottom-align_outlined"
                         class="preview-icon-svg"
@@ -196,7 +196,7 @@
                         icon-class="icon_right_outlined"
                         class="preview-icon-svg"
                       />
-                    </el-dropdown-item>
+                    </div>
                     <el-dropdown-menu
                       slot="dropdown"
                       class="de-card-dropdown de-card-dropdown-right"
@@ -387,7 +387,7 @@ import PanelDetailInfo from '@/views/panel/list/common/PanelDetailInfo'
 import AppExportForm from '@/views/panel/list/AppExportForm'
 import GrantAuth from '../grantAuth'
 import msgCfm from '@/components/msgCfm/index'
-
+import { inOtherPlatform } from '@/utils/index'
 export default {
   name: 'PanelViewShow',
   components: { AppExportForm, PanelDetailInfo, Preview, SaveToTemplate, PDFPreExport, ShareHead, GrantAuth },
@@ -444,6 +444,9 @@ export default {
     },
     panelInfo() {
       return this.$store.state.panel.panelInfo
+    },
+    isOtherPlatform() {
+      return inOtherPlatform()
     },
     ...mapState([
       'componentData',

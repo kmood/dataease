@@ -117,7 +117,7 @@
                 @change="checkedViewsChange"
               >
                 <el-checkbox
-                  v-for="(item ) in childViews.viewInfos"
+                  v-for="(item ) in curTableViews"
                   :key="item.id"
                   :label="item.id"
                   class="de-checkbox"
@@ -280,10 +280,8 @@ export default {
     datasetParams: {
       type: Array,
       default: () => []
-    },
-    activeName:{
-
     }
+
   },
   data() {
     return {
@@ -310,6 +308,12 @@ export default {
   computed: {
     fieldIds() {
       return this.element.options.attrs.fieldId || []
+    },
+    curTableViews() {
+      const tableIdList = this.element.options.attrs.dragItems.map(item => item.tableId) || []
+
+      const views = this.childViews.viewInfos.filter(view => tableIdList.includes(view.tableId))
+      return views
     }
   },
   watch: {
@@ -344,32 +348,16 @@ export default {
                 hasParam = true
               }
             }
-            if(!hasParam){
+            if (!hasParam) {
               this.allParams.push(this.datasetParams[j])
             }
           }
         }
       }
     },
-    'activeName':{
+    'activeName': {
       handler(newName, oldName) {
-        if(this.activeName === 'assembly'){
-          this.allParams = JSON.parse(JSON.stringify(this.childViews.datasetParams))
-        }else {
-          if (this.datasetParams.length > 0) {
-            for (var j = 0; j < this.datasetParams.length; j++) {
-              var hasParam = false
-              for (var i = 0; i < this.childViews.datasetParams.length; i++) {
-                if (this.childViews.datasetParams[i].id === this.datasetParams[j].id) {
-                  hasParam = true
-                }
-              }
-              if(!hasParam){
-                this.allParams.push(this.datasetParams[j])
-              }
-            }
-          }
-        }
+
       }
     }
   },
